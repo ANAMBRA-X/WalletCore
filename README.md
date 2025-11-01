@@ -91,7 +91,7 @@ _Success (200 OK)_
 {
   "message": "Account generated successfully",
   "publicKey": "0x...",
-  "OZcontractAddress": "0x...",
+  "contractAddress": "0x...",
   "privateKey": "0x..."
 }
 ```
