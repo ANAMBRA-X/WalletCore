@@ -29,8 +29,7 @@ export const createAccount = async (req, res) => {
       publicKey: publicKey,
     });
 
-    const encryptedKey = encryptPrivateKey(privateKey);
-
+    // const encryptedKey = encryptPrivateKey(privateKey);
 
     const OZcontractAddress = hash.calculateContractAddressFromHash(
       publicKey,
@@ -44,9 +43,8 @@ export const createAccount = async (req, res) => {
       message: 'Account generated successfully',
       publicKey,
       OZcontractAddress,
-      encryptedKey,
+      privateKey,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to create account' });

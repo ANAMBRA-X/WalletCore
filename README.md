@@ -1,114 +1,171 @@
 # WalletCore API
 
 ## Overview
-This project is a backend API service built with Node.js and the Express framework to interact with the Starknet blockchain. It provides core functionality for creating new Starknet accounts and pre-funding them with STRK tokens from a designated admin wallet.
+
+WalletCore is a backend service built with Node.js and Express.js, designed to manage Starknet blockchain wallets. It provides a RESTful API for creating, pre-funding, and deploying Starknet accounts programmatically.
 
 ## Features
-- **Starknet.js**: For programmatic creation of Starknet accounts, address calculation, and on-chain transaction execution.
-- **Express.js**: To build a clean, RESTful API server with defined routes for wallet operations.
-- **AES-256-GCM Encryption**: For securely encrypting private keys using Node.js's native `crypto` module before they are returned to the client.
+
+- **Node.js / Express**: Provides a robust and scalable server for the REST API.
+- **starknet.js**: Facilitates all interactions with the Starknet blockchain, including key generation, address calculation, and contract deployment.
+- **dotenv**: Manages environment variables for secure configuration.
+- **Node Crypto**: Offers built-in cryptographic functions for securing sensitive data like private keys.
 
 ## Getting Started
+
 ### Installation
-1.  Clone the repository:
+
+1.  **Clone the repository:**
+
     ```bash
-    git clone https://github.com/your-username/walletcore.git
+    git clone https://github.com/ANAMBRA-X/WalletCore.git
+    cd WalletCore
     ```
-2.  Navigate to the project directory:
-    ```bash
-    cd walletcore
-    ```
-3.  Install dependencies:
+
+2.  **Install dependencies:**
+
     ```bash
     npm install
     ```
-4.  Create a `.env` file in the root directory and populate it with the variables listed below.
-5.  Start the development server:
+
+3.  **Set up environment variables:**
+    Create a `.env` file in the root directory and add the variables listed below.
+
+4.  **Start the server:**
+
     ```bash
+    # For development with live reloading
     npm run dev
+
+    # For production
+    npm run start
     ```
-    The server will be running on the port specified in your `.env` file (e.g., `http://localhost:3000`).
 
 ### Environment Variables
-Create a `.env` file in the project root with the following variables:
 
-- `PORT`: The port the server will run on.
-  - Example: `PORT=3000`
-- `RPC_NETWORK`: The URL for your Starknet RPC node.
-  - Example: `RPC_NETWORK=https://starknet-mainnet.public.blastapi.io`
-- `OZ_ACCOUNT_CLASS_HASH`: The class hash for the OpenZeppelin account contract you intend to use.
-  - Example: `OZ_ACCOUNT_CLASS_HASH=0x025ec026985a3bf9d0cc1fe17326b245dfdc3ff89b8fde106242a3ea56c5a918`
-- `ADMIN_ADDRESS`: The Starknet address of the wallet that will fund new accounts.
-  - Example: `ADMIN_ADDRESS=0xYourFunderWalletAddressOnStarknet`
-- `ADMIN_PRIVATE_KEY`: The private key for the funder wallet.
-  - Example: `ADMIN_PRIVATE_KEY=0xYourFunderWalletPrivateKey`
-- `ENCRYPTION_SECRET`: A 32-byte (64-character hex string) secret key for encrypting private keys.
-  - Example: `ENCRYPTION_SECRET=a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2`
+Create a `.env` file in the project root and populate it with the following required variables:
+
+```ini
+# Server Configuration
+PORT=3000
+
+# Starknet Configuration
+# The class hash of the OpenZeppelin account contract you intend to deploy
+OZ_ACCOUNT_CLASS_HASH=0x05400e90f7e0ae78bd02c77cd75527280470e2c19c54e99c1233c680d070b853
+
+# The RPC endpoint for the Starknet network (e.g., Sepolia Testnet)
+RPC_NETWORK=https://starknet-sepolia.public.blastapi.io/rpc/v0_7
+
+# Funder Account Details (Admin wallet for pre-funding new accounts)
+ADMIN_ADDRESS=0x04e...
+ADMIN_PRIVATE_KEY=0x01a...
+
+# Security
+# A 64-character hex string (32 bytes) for AES-256-GCM encryption
+ENCRYPTION_SECRET=...
+```
 
 ## API Documentation
+
 ### Base URL
-`http://localhost:3000`
+
+The API base URL is the root path of the server (e.g., `http://localhost:3000`).
 
 ### Endpoints
+
 #### POST /createAccount
-**Description**: Generates a new Starknet private/public key pair, calculates the corresponding contract address, and returns public details along with the encrypted private key.
+
+Generates a new Starknet private key, derives the corresponding public key, and pre-calculates the future contract address for an OpenZeppelin account.
 
 **Request**:
-The request body should be empty.
+No request body is required.
+
 ```json
 {}
 ```
 
 **Response**:
-A successful response returns the new account's details.
+_Success (200 OK)_
+
 ```json
 {
-    "message": "Account generated successfully",
-    "publicKey": "0x5f3e4b7a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8",
-    "OZcontractAddress": "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8",
-    "encryptedKey": {
-        "iv": "e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6",
-        "content": "...",
-        "tag": "..."
-    }
+  "message": "Account generated successfully",
+  "publicKey": "0x...",
+  "OZcontractAddress": "0x...",
+  "privateKey": "0x..."
 }
 ```
 
 **Errors**:
-- **500 Internal Server Error**: `{ "error": "Failed to create account" }`
-  - Occurs if there is an internal issue during key generation or address calculation, or if `OZ_ACCOUNT_CLASS_HASH` or `ENCRYPTION_SECRET` are missing or invalid.
+
+- **500 Internal Server Error**: `{"error": "Failed to create account"}` - Occurs if there is an unexpected server-side issue during key generation or address calculation.
 
 ---
+
 #### POST /prefund
-**Description**: Transfers a specified amount of STRK tokens from the configured admin wallet to a target address. This is used to provide an initial balance for new accounts to pay for deployment and transaction fees.
+
+Transfers STRK tokens from the admin/funder wallet to a specified address. This is used to fund a new account's address before it is deployed, covering the deployment fees.
 
 **Request**:
-The request body must contain the target address and the amount of STRK to send as a string.
+
 ```json
 {
-  "futureAddress": "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8",
-  "amount": "0.001"
+  "futureAddress": "0x...",
+  "amount": "1000000000000000"
+}
+```
+
+_Note: `amount` should be specified in wei (e.g., 1 STRK = 10^18 wei)._
+
+**Response**:
+_Success (200 OK)_
+
+```json
+{
+  "message": "STRK Prefund complete",
+  "token": "STRK",
+  "amount": "1000000000000000",
+  "to": "0x...",
+  "transactionHash": "0x..."
+}
+```
+
+**Errors**:
+
+- **400 Bad Request**: `{"error": "Missing required parameters: futureAddress, amount"}` - One or both required fields are missing from the request body.
+- **500 Internal Server Error**: `{"error": "Prefunding failed", "details": "..."}` - The transfer transaction failed, potentially due to insufficient funds in the funder wallet or other network errors.
+- **500 Internal Server Error**: `{"error": "Configuration error: Funder details or RPC URL missing. Check your .env file."}` - `ADMIN_ADDRESS`, `ADMIN_PRIVATE_KEY`, or `RPC_NETWORK` is missing.
+- **500 Internal Server Error**: `{"error": "Failed to load contract ABI required for interaction."}` - The server failed to fetch the STRK token contract ABI from the network.
+
+---
+
+#### POST /deployAccount
+
+Deploys a pre-calculated Starknet account contract to the network. The account must be funded with enough ETH for the deployment fee prior to calling this endpoint.
+
+**Request**:
+
+```json
+{
+  "privateKey": "0x..."
 }
 ```
 
 **Response**:
-A successful response confirms the transaction details.
+_Success (200 OK)_
+
 ```json
 {
-    "message": "STRK Prefund complete",
-    "token": "STRK",
-    "amount": "0.001",
-    "to": "0x7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8",
-    "transactionHash": "0x123abcdeffedcba1234567890abcdef1234567890abcdef1234567890abc"
+  "message": "Account deployed successfully",
+  "contractAddress": "0x...",
+  "transactionHash": "0x..."
 }
 ```
 
 **Errors**:
-- **400 Bad Request**: `{ "error": "Missing required parameters: futureAddress, amount" }`
-  - The request body is missing one or both of the required fields.
-- **500 Internal Server Error**: `{ "error": "Configuration error: Funder details or RPC URL missing. Check your .env file." }`
-  - The server is missing required environment variables (`ADMIN_ADDRESS`, `ADMIN_PRIVATE_KEY`, `RPC_NETWORK`).
-- **500 Internal Server Error**: `{ "error": "Prefunding failed", "details": "..." }`
-  - The on-chain transaction failed for a specific reason, such as insufficient funds in the admin wallet. The `details` field will contain the error message from the blockchain.
+
+- **400 Bad Request**: `{"error": "Missing required parameter: privateKey"}` - The `privateKey` field is missing from the request body.
+- **500 Internal Server Error**: `{"error": "Deploy Account failed", "details": "..."}` - The deployment transaction failed. This could be due to insufficient funds, network issues, or an invalid private key.
+- **500 Internal Server Error**: `{"error": "Configuration error: RPC URL missing. Check your .env file."}` - The `RPC_NETWORK` environment variable is not set.
 
 [![Readme was generated by Dokugen](https://img.shields.io/badge/Readme%20was%20generated%20by-Dokugen-brightgreen)](https://www.npmjs.com/package/dokugen)
