@@ -111,7 +111,7 @@ Transfers STRK tokens from the admin/funder wallet to a specified address. This 
 ```json
 {
   "futureAddress": "0x...",
-  "amount": "1000000000000000"
+  "amount": "4"
 }
 ```
 
